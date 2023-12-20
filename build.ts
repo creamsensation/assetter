@@ -7,28 +7,28 @@ import postCssPlugin from 'npm:@deanc/esbuild-plugin-postcss'
 import manifest from 'npm:esbuild-plugin-manifest'
 import {clean} from 'npm:esbuild-plugin-clean'
 
-const flagEntryPath = 'entry-path'
+const flagRootPath = 'root-path'
 const flagConfigPath = 'config-path'
-const flagPublicPath = 'public-path'
+const flagOutputPath = 'output-path'
 
 const flags = parse(Deno.args, {
-	string: [flagEntryPath, flagConfigPath, flagPublicPath],
+	string: [flagRootPath, flagConfigPath, flagOutputPath],
 });
 
 export async function build() {
 	try {
 		await esbuild.build({
-			entryPoints: [flags[flagEntryPath]+'/scripts/main.ts'],
+			entryPoints: [flags[flagRootPath]+'/scripts/main.ts'],
 			entryNames: '[name]-[hash]',
 			bundle: true,
 			sourcemap: true,
 			minify: true,
 			format: "esm",
-			outdir: flags[flagPublicPath] + '/scripts/',
+			outdir: flags[flagOutputPath] + '/scripts/',
 			plugins: [
 				...denoPlugins(),
 				clean({
-					patterns: [flags[flagPublicPath] + '/scripts/*'],
+					patterns: [flags[flagOutputPath] + '/scripts/*'],
 				}),
 				manifest(),
 			],
@@ -41,15 +41,15 @@ export async function build() {
 	
 	try {
 		await esbuild.build({
-			entryPoints: [flags[flagEntryPath]+'/styles/main.css'],
+			entryPoints: [flags[flagRootPath]+'/styles/main.css'],
 			entryNames: '[dir]/[name]-[hash]',
 			bundle: true,
 			sourcemap: true,
 			minify: true,
-			outdir: flags[flagPublicPath] + '/styles/',
+			outdir: flags[flagOutputPath] + '/styles/',
 			plugins: [
 				clean({
-					patterns: [flags[flagPublicPath] + '/styles/*'],
+					patterns: [flags[flagOutputPath] + '/styles/*'],
 				}),
 				manifest(),
 				postCssPlugin({

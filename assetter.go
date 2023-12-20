@@ -14,9 +14,10 @@ import (
 )
 
 type Assetter struct {
-	EntryPath  string
+	RootPath   string
 	ConfigPath string
 	PublicPath string
+	OutputPath string
 	Styles     []string
 	Scripts    []string
 	OnBuild    func()
@@ -37,21 +38,32 @@ const (
 	sourcemapSuffix  = ".map"
 )
 
-func New(entryPath, configPath, publicPath string) *Assetter {
+func New(rootPath, configPath, publicPath, outputPath string) *Assetter {
+	configPath = fmt.Sprintf("%s/%s", rootPath, configPath)
+	publicPath = fmt.Sprintf("%s/%s", rootPath, publicPath)
+	if len(outputPath) > 0 {
+		outputPath = fmt.Sprintf(
+			"%s/%s", publicPath, outputPath,
+		)
+	}
 	a := &Assetter{
-		EntryPath:  entryPath,
+		RootPath:   rootPath,
 		ConfigPath: configPath,
 		PublicPath: publicPath,
+		OutputPath: outputPath,
 	}
 	return a
 }
 
 func (a *Assetter) Build() {
+	if len(a.ConfigPath) == 0 {
+		return
+	}
 	cmd := exec.Command(
 		"deno", "run", "--allow-all", fmt.Sprintf("%s/build.ts", a.ConfigPath),
-		fmt.Sprintf("--entry-path=%s", a.EntryPath),
+		fmt.Sprintf("--root-path=%s", a.RootPath),
 		fmt.Sprintf("--config-path=%s", a.ConfigPath),
-		fmt.Sprintf("--public-path=%s", a.PublicPath),
+		fmt.Sprintf("--output-path=%s", a.OutputPath),
 	)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -88,8 +100,8 @@ func (a *Assetter) Build() {
 	}
 }
 
-func (a *Assetter) SetEntryPath(entryPath string) *Assetter {
-	a.EntryPath = entryPath
+func (a *Assetter) SetRootPath(rootPath string) *Assetter {
+	a.RootPath = rootPath
 	return a
 }
 
@@ -105,7 +117,7 @@ func (a *Assetter) SetPublicPath(publicPath string) *Assetter {
 
 func (a *Assetter) readManifest(dir string) []string {
 	result := make([]string, 0)
-	mb, err := os.ReadFile(fmt.Sprintf("%s/%s/%s", a.PublicPath, dir, manifestFilename))
+	mb, err := os.ReadFile(fmt.Sprintf("%s/%s/%s", a.OutputPath, dir, manifestFilename))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -117,7 +129,7 @@ func (a *Assetter) readManifest(dir string) []string {
 		if strings.HasSuffix(path, sourcemapSuffix) {
 			continue
 		}
-		result = append(result, strings.TrimPrefix(path, a.EntryPath))
+		result = append(result, strings.TrimPrefix(path, a.RootPath))
 	}
 	return result
 }
